@@ -15,9 +15,6 @@ $informacionR = (isset($_POST['Informacion']))?$_POST['Informacion']:"";//Vector
     $registroProductos=json_encode($informacionR);
     $cadenaProductos=json_decode(json_encode($informacionR), true);
 
-
-
-
     include ('..//conexion/conexion.php');
 
     $sentencia=$pdo1->prepare('SELECT * FROM ventas WHERE codigo=:codigoInR AND id_cliente=:id_cliente');
@@ -36,72 +33,85 @@ $informacionR = (isset($_POST['Informacion']))?$_POST['Informacion']:"";//Vector
 
     if($codigoList!=null){
         if(empty($informacionR)||empty($clienteR)||empty($diasR)||empty($codigoR)||empty($precioRA)){
-        echo "<div class='alert alert-danger'>Alguno de los campos están vacíos</div>";                        
-    }else{
+            echo "<div class='alert alert-danger'>Alguno de los campos están vacíos</div>";                        
+        }else{
 
-        if (is_array($cadenaProductos) || is_object($cadenaProductos)){
-            //$nListado="";
-            foreach($listado as $list){
+            if (is_array($cadenaProductos) || is_object($cadenaProductos)){
+                $flagCantidad=false;
+                $flagProducto=false;
                 foreach($cadenaProductos as $productoCad){
-                    if($productoCad['id']==$list['id']){
-                        $list['cantidad']=$list['cantidad']-$productoCad['cantidad'];
+                    foreach($listado as $key => $entry){
+                        if($entry['id']==$productoCad['id']){
+                            $flagProducto=true;
+                            if($listado[$key]['cantidad']>$productoCad['cantidad']){
+                                $listado[$key]['cantidad']=$listado[$key]['cantidad']-$productoCad['cantidad'];
+                                $flagCantidad=true;
+                            }
                     }
                 }
-                //$nListado=$nListado+$list;
             }
-            $nuevoListado=json_encode($nListado);
 
-            $sentencia=$pdo1->prepare('UPDATE ventas SET
-            productos=:productos, 
-            fecha_e=:fecha WHERE 
-            codigo=:codigoInR AND id_cliente=:id_cliente');
-            
-            $sentencia->bindParam(':codigoInR',$codigoInR);
-            $sentencia->bindParam(':id_cliente',$clienteR);
-            $sentencia->bindParam(':productos',$nuevoListado);
-            $sentencia->bindParam(':fecha',$fecha_registroR);
-            $sentencia->execute();
+            if($flagProducto){
+                if($flagCantidad){
+                    //$nuevoListado=json_decode((json_encode($listado)),true);
+                    $nuevoListado=json_encode($listado);
 
 
-            foreach($cadenaProductos as $producto){
+                    var_dump($nuevoListado);
+
+                    $sentencia=$pdo1->prepare('UPDATE ventas SET
+                    productos=:productos, 
+                    fecha_e=:fecha WHERE 
+                    codigo=:codigoInR AND id_cliente=:id_cliente');
+                    
+                    $sentencia->bindParam(':codigoInR',$codigoInR);
+                    $sentencia->bindParam(':id_cliente',$clienteR);
+                    $sentencia->bindParam(':productos',$nuevoListado);
+                    $sentencia->bindParam(':fecha',$fecha_registroR);
+                    $sentencia->execute();
 
 
-               $sentencia=$pdo1->prepare('UPDATE productos SET
-                stock=:stock, 
-                fecha=:fecha WHERE 
-                id=:id');
+                    foreach($cadenaProductos as $producto){
 
-                $sentencia->bindParam(':id', $producto['id']);
-                $sentencia->bindParam(':stock',$producto['stock']);
-                $sentencia->bindParam(':fecha',$fecha_registroR);
-                $sentencia->execute();
+
+                        $sentencia=$pdo1->prepare('UPDATE productos SET
+                        stock=:stock, 
+                        fecha=:fecha WHERE 
+                        id=:id');
+
+                        $sentencia->bindParam(':id', $producto['id']);
+                        $sentencia->bindParam(':stock',$producto['stock']);
+                        $sentencia->bindParam(':fecha',$fecha_registroR);
+                        $sentencia->execute();
+                    }
+                    $sentencia=$pdo1->prepare('INSERT INTO entradas(codigo,id_cliente, productos, neto, total, fecha_e) VALUES (:codigo,:id_cliente,:productos,:neto,:total,:fecha_e)');
+
+                    $sentencia->bindParam(':codigo',$codigoR);
+                    $sentencia->bindParam(':id_cliente',$clienteR);
+                    $sentencia->bindParam(':productos',$registroProductos);
+                    $sentencia->bindParam(':neto',$diasR);
+                    $sentencia->bindParam(':total',$precioRA);
+                    $sentencia->bindParam(':fecha_e',$fecha_registroR);
+                    $sentencia->execute();
+
+                    ?> 
+
+                    <!--<script type="text/javascript"> location.reload();</script> --> <?php 
+
+                }else{
+                    echo "<div class='alert alert-danger'>Cantidad ingresada supera a la de cantidad de salida</div>";
+                }
+
+            }else{
+                echo "<div class='alert alert-danger'>No está el producto dentro de esta remisión</div>";
             }
-            $sentencia=$pdo1->prepare('INSERT INTO entradas(codigo,id_cliente, productos, neto, total, fecha_e) VALUES (:codigo,:id_cliente,:productos,:neto,:total,:fecha_e)');
 
-            $sentencia->bindParam(':codigo',$codigoR);
-            $sentencia->bindParam(':id_cliente',$clienteR);
-            $sentencia->bindParam(':productos',$registroProductos);
-            $sentencia->bindParam(':neto',$diasR);
-            $sentencia->bindParam(':total',$precioRA);
-            $sentencia->bindParam(':fecha_e',$fecha_registroR);
-            $sentencia->execute();
-
-            ?> 
-
-            <!--<script type="text/javascript"> location.reload();</script> --> <?php 
 
         }else{
             echo "<div class='alert alert-danger'>Debe agregar productos</div>";                         
         }
-                    
-                             
     }
-
-
     }else{
         echo "<div class='alert alert-danger'>Código de salida y cliente no coinciden, por favor verifique</div>";
     }
-
-
-    
 ?>
