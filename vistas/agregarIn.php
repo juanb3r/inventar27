@@ -25,11 +25,6 @@ $informacionR = (isset($_POST['Informacion']))?$_POST['Informacion']:"";//Vector
     foreach($codigoList as $productolist){ 
         $listado=json_decode($productolist['productos'], true);
     }
-    echo "listado";
-    var_dump($listado);
-        echo "cadenaProductos";
-        var_dump($cadenaProductos);
-       
 
     if($codigoList!=null){
         if(empty($informacionR)||empty($clienteR)||empty($diasR)||empty($codigoR)||empty($precioRA)){
@@ -53,11 +48,9 @@ $informacionR = (isset($_POST['Informacion']))?$_POST['Informacion']:"";//Vector
 
             if($flagProducto){
                 if($flagCantidad){
-                    //$nuevoListado=json_decode((json_encode($listado)),true);
+
                     $nuevoListado=json_encode($listado);
 
-
-                    var_dump($nuevoListado);
 
                     $sentencia=$pdo1->prepare('UPDATE ventas SET
                     productos=:productos, 
